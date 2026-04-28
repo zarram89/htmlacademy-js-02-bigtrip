@@ -1,76 +1,48 @@
 import { createElement } from '../render.js';
-import dayjs from 'dayjs';
+import { humanizeDay, humanizeTime, getDuration } from '../utils.js';
 
-function createOffersTemplate(selectedOffers, allOffers) {
-  if (!selectedOffers.length) {
+function createOffersTemplate(offers = []) {
+  if (!offers.length) {
     return '';
   }
 
-  const offers = allOffers
-    .filter((offer) => selectedOffers.includes(offer.id));
-
-  return offers.map((offer) => `
-    <li class="event__offer">
-      <span class="event__offer-title">${offer.title}</span>
-      &plus;&euro;&nbsp;
-      <span class="event__offer-price">${offer.price}</span>
-    </li>
-  `).join('');
-}
-
-function getDuration(startDate, endDate) {
-  const durationMinutes = endDate.diff(startDate, 'minute');
-  const durationHours = endDate.diff(startDate, 'hour');
-  const durationDays = endDate.diff(startDate, 'day');
-
-  if (durationDays > 0) {
-    return `${durationDays}D ${durationHours % 24}H ${durationMinutes % 60}M`;
-  }
-
-  if (durationHours > 0) {
-    return `${durationHours}H ${durationMinutes % 60}M`;
-  }
-
-  return `${durationMinutes}M`;
+  return `
+    <h4 class="visually-hidden">Offers:</h4>
+    <ul class="event__selected-offers">
+      ${offers.map((offer) => `
+        <li class="event__offer">
+          <span class="event__offer-title">${offer.title}</span>
+          &plus;&euro;&nbsp;
+          <span class="event__offer-price">${offer.price}</span>
+        </li>
+      `).join('')}
+    </ul>
+  `;
 }
 
 function createPointTemplate({ point, destination, offers }) {
-  const { basePrice, dateFrom, dateTo, isFavorite, type, offerIds } = point;
+  const { basePrice, dateFrom, dateTo, isFavorite, type } = point;
 
-  const startDate = dayjs(dateFrom);
-  const endDate = dayjs(dateTo);
-
-  const dateHuman = startDate.format('MMM D').toUpperCase();
-  const startTime = startDate.format('HH:mm');
-  const endTime = endDate.format('HH:mm');
-
-  const duration = getDuration(startDate, endDate);
-
-  const offersTemplate = createOffersTemplate(offerIds, offers);
-
-  return (
-    `<li class="trip-events__item">
+  return `
+    <li class="trip-events__item">
       <div class="event">
-        <time class="event__date" datetime="${dateFrom}">${dateHuman}</time>
+        <time class="event__date" datetime="${dateFrom}">${humanizeDay(dateFrom)}</time>
         <div class="event__type">
           <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
         </div>
         <h3 class="event__title">${type} ${destination?.name || ''}</h3>
         <div class="event__schedule">
           <p class="event__time">
-            <time class="event__start-time" datetime="${dateFrom}">${startTime}</time>
+            <time class="event__start-time" datetime="${dateFrom}">${humanizeTime(dateFrom)}</time>
             &mdash;
-            <time class="event__end-time" datetime="${dateTo}">${endTime}</time>
+            <time class="event__end-time" datetime="${dateTo}">${humanizeTime(dateTo)}</time>
           </p>
-          <p class="event__duration">${duration}</p>
+          <p class="event__duration">${getDuration(dateFrom, dateTo)}</p>
         </div>
         <p class="event__price">
           &euro;&nbsp;<span class="event__price-value">${basePrice}</span>
         </p>
-        <h4 class="visually-hidden">Offers:</h4>
-        <ul class="event__selected-offers">
-          ${offersTemplate}
-        </ul>
+        ${createOffersTemplate(offers)}
         <button class="event__favorite-btn ${isFavorite ? 'event__favorite-btn--active' : ''}" type="button">
           <span class="visually-hidden">Add to favorite</span>
           <svg class="event__favorite-icon" width="28" height="28" viewBox="0 0 28 28">
@@ -81,12 +53,12 @@ function createPointTemplate({ point, destination, offers }) {
           <span class="visually-hidden">Open event</span>
         </button>
       </div>
-    </li>`
-  );
+    </li>
+  `;
 }
 
 export default class PointView {
-  constructor({ point, destination, offers }) {
+  constructor({ point, destination, offers = [] }) {
     this.point = point;
     this.destination = destination;
     this.offers = offers;
@@ -104,7 +76,6 @@ export default class PointView {
     if (!this.element) {
       this.element = createElement(this.getTemplate());
     }
-
     return this.element;
   }
 
