@@ -7,26 +7,39 @@ import { render } from '../render.js';
 export default class BoardPresenter {
   boardComponent = new EventListView();
 
-  constructor({ boardContainer, pointsModel }) {
+  constructor({
+    boardContainer,
+    pointsModel,
+    destinationsModel,
+    offersModel
+  }) {
     this.boardContainer = boardContainer;
     this.pointsModel = pointsModel;
+    this.destinationsModel = destinationsModel;
+    this.offersModel = offersModel;
   }
 
   init() {
-    this.boardPoints = [...this.pointsModel.getPoints()];
-    const firstPoint = this.boardPoints[0];
+    this.boardPoints = [...this.pointsModel.getAll()];
 
     render(new SortView(), this.boardContainer);
     render(this.boardComponent, this.boardContainer);
-    render(new EditPointView({
-      point: firstPoint,
-      destination: this.pointsModel.getDestinationById(firstPoint.destinationId),
-      offers: this.pointsModel
-        .getOffersByType(firstPoint.type)
-        .filter((offer) => firstPoint.offerIds.includes(offer.id)),
-      allDestinations: this.pointsModel.getDestinations(),
-      allOffers: this.pointsModel.getOffersByType(firstPoint.type)
-    }), this.boardComponent.getElement());
+
+    if (!this.boardPoints.length) {
+      return;
+    }
+
+    const firstPoint = this.boardPoints[0];
+
+    render(
+      new EditPointView({
+        point: firstPoint,
+        destination: this.destinationsModel.getById(firstPoint.destination),
+        offersByType: this.offersModel.getByType(firstPoint.type),
+        allDestinations: this.destinationsModel.getAll(),
+      }),
+      this.boardComponent.getElement()
+    );
 
     for (let i = 1; i < this.boardPoints.length; i++) {
       const point = this.boardPoints[i];
@@ -34,10 +47,8 @@ export default class BoardPresenter {
       render(
         new PointView({
           point,
-          destination: this.pointsModel.getDestinationById(point.destinationId),
-          offers: this.pointsModel
-            .getOffersByType(point.type)
-            .filter((offer) => point.offerIds.includes(offer.id))
+          destination: this.destinationsModel.getById(point.destination),
+          offers: this.offersModel.getByIds(point.offerIds)
         }),
         this.boardComponent.getElement()
       );
