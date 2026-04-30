@@ -1,17 +1,20 @@
 export default class DestinationsModel {
-  constructor(destinations) {
-    this.destinations = destinations;
+  #destinations = [];
+  #destinationsMap = null;
 
-    this.destinationsMap = new Map(
+  constructor(destinations) {
+    this.#destinations = destinations;
+
+    this.#destinationsMap = new Map(
       destinations.map((d) => [d.id, d])
     );
   }
 
-  getAll() {
-    return this.destinations;
+  get destinations() {
+    return this.#destinations;
   }
 
   getById(id) {
-    return this.destinationsMap.get(id);
+    return this.#destinationsMap.get(id);
   }
 }

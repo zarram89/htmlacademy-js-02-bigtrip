@@ -1,5 +1,5 @@
-import { createElement } from '../render.js';
-import { TYPES } from '../const.js';
+import AbstractView from '../framework/view/abstract-view.js';
+import { TYPES, EMPTY_POINT } from '../const.js';
 import { humanizeDate } from '../utils.js';
 
 function createTypesTemplate(currentType, id) {
@@ -98,13 +98,13 @@ function createEditPointTemplate({
   allDestinations
 }) {
   const {
-    id = 'new',
-    basePrice = '',
-    dateFrom = '',
-    dateTo = '',
-    type = 'flight',
-    offerIds = []
-  } = point || {};
+    id,
+    basePrice,
+    dateFrom,
+    dateTo,
+    type,
+    offerIds,
+  } = point;
 
   const offersSection = createOffersSection(offersByType, offerIds);
   const destinationSection = createDestinationSection(destination);
@@ -194,31 +194,47 @@ function createEditPointTemplate({
   );
 }
 
-export default class EditPointView {
-  constructor({ point = {}, destination = null, offersByType = [], allDestinations = [] }) {
-    this.point = point;
-    this.destination = destination;
-    this.offersByType = offersByType;
-    this.allDestinations = allDestinations;
+export default class EditPointView extends AbstractView {
+  #point = null;
+  #destination = null;
+  #offersByType = [];
+  #allDestinations = [];
+  #handleFormSubmit = null;
+  #handleRollupClick = null;
+
+  constructor({ point, destination, offersByType, allDestinations, onFormSubmit, onRollupClick }) {
+    super();
+    this.#point = point || EMPTY_POINT;
+    this.#destination = destination;
+    this.#offersByType = offersByType || [];
+    this.#allDestinations = allDestinations || [];
+
+    this.#handleFormSubmit = onFormSubmit;
+    this.#handleRollupClick = onRollupClick;
+
+    this.element.querySelector('form')
+      .addEventListener('submit', this.#formSubmitHandler);
+
+    this.element.querySelector('.event__rollup-btn')
+      .addEventListener('click', this.#rollupClickHandler);
   }
 
-  getTemplate() {
+  get template() {
     return createEditPointTemplate({
-      point: this.point,
-      destination: this.destination,
-      offersByType: this.offersByType,
-      allDestinations: this.allDestinations
+      point: this.#point,
+      destination: this.#destination,
+      offersByType: this.#offersByType,
+      allDestinations: this.#allDestinations
     });
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
-    return this.element;
-  }
+  #formSubmitHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleFormSubmit();
+  };
 
-  removeElement() {
-    this.element = null;
-  }
+  #rollupClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleRollupClick();
+  };
 }

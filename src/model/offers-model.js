@@ -1,33 +1,37 @@
 export default class OffersModel {
-  constructor(offers) {
-    this.offers = offers;
+  #offers = [];
+  #offersMap = null;
+  #offersByType = null;
 
-    this.offersByType = new Map(
-      offers.map((group) => [group.type, group.offers])
+  constructor(offers) {
+    this.#offers = offers;
+
+    this.#offersByType = new Map(
+      this.#offers.map((group) => [group.type, group.offers])
     );
 
-    this.offersMap = new Map();
+    this.#offersMap = new Map();
 
-    offers.forEach((group) => {
+    this.#offers.forEach((group) => {
       group.offers.forEach((offer) => {
-        this.offersMap.set(offer.id, offer);
+        this.#offersMap.set(offer.id, offer);
       });
     });
   }
 
+  get offers() {
+    return this.#offers;
+  }
+
   getByType(type) {
-    return this.offersByType.get(type) || [];
+    return this.#offersByType.get(type) || [];
   }
 
   getById(id) {
-    return this.offersMap.get(id);
+    return this.#offersMap.get(id);
   }
 
   getByIds(ids = []) {
-    return ids.map((id) => this.offersMap.get(id)).filter(Boolean);
-  }
-
-  getAll() {
-    return this.offers;
+    return ids.map((id) => this.#offersMap.get(id)).filter(Boolean);
   }
 }
