@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { FilterType } from './const.js';
 
 const DATE_FORMAT = 'DD/MM/YY HH:mm';
 const TIME_FORMAT = 'HH:mm';
@@ -43,4 +44,17 @@ function getDuration(startDate, endDate) {
   return `${minutes}M`;
 }
 
-export { getRandomItem, getRandomInt, generateId, humanizeDate, humanizeTime, humanizeDay, getDuration };
+const isFuture = (point) => new Date(point.dateFrom) > new Date();
+const isPast = (point) => new Date(point.dateTo) < new Date();
+const isPresent = (point) =>
+  new Date(point.dateFrom) <= new Date() &&
+  new Date(point.dateTo) >= new Date();
+
+const filter = {
+  [FilterType.EVERYTHING]: (points) => points,
+  [FilterType.FUTURE]: (points) => points.filter(isFuture),
+  [FilterType.PRESENT]: (points) => points.filter(isPresent),
+  [FilterType.PAST]: (points) => points.filter(isPast),
+};
+
+export { getRandomItem, getRandomInt, generateId, humanizeDate, humanizeTime, humanizeDay, getDuration, filter };

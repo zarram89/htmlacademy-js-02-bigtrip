@@ -1,5 +1,23 @@
 const mockPoints = [
   {
+    'id': 'test-past-id',
+    'basePrice': 100,
+    'dateFrom': '2023-01-01T09:00:00.000Z', // Прошлое
+    'dateTo': '2023-01-01T10:00:00.000Z',
+    'type': 'ship',
+    'destination': '...',
+    'offerIds': []
+  },
+  {
+    'id': 'test-present-id',
+    'basePrice': 100,
+    'dateFrom': '2026-04-30T09:00:00.000Z', // настоящее
+    'dateTo': '2026-04-30T24:00:00.000Z',
+    'type': 'bus',
+    'destination': '...',
+    'offerIds': []
+  },
+  {
     'id': '4b4efa49-494e-4bc3-aedc-a064c294d67d',
     'basePrice': 9493,
     'dateFrom': '2026-06-13T09:19:04.616Z',

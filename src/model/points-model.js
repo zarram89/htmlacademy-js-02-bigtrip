@@ -1,13 +1,15 @@
 export default class PointsModel {
+  #points = [];
+
   constructor(points) {
-    this.points = points;
+    this.#points = points;
   }
 
-  getAll() {
-    return this.points;
+  get points() {
+    return this.#points;
   }
 
   getPointById(id) {
-    return this.points.find((p) => p.id === id);
+    return this.#points.find((p) => p.id === id);
   }
 }
