@@ -12,4 +12,12 @@ export default class PointsModel {
   getPointById(id) {
     return this.#points.find((p) => p.id === id);
   }
+
+  updatePoint(updatedPoint) {
+    const index = this.#points.findIndex((point) => point.id === updatedPoint.id);
+
+    if (index !== -1) {
+      this.#points.splice(index, 1, updatedPoint);
+    }
+  }
 }
