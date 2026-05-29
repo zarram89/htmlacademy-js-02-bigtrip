@@ -1,4 +1,4 @@
-import AbstractView from '../framework/view/abstract-view.js';
+import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 import { TYPES, EMPTY_POINT } from '../const.js';
 import { humanizeDate } from '../utils.js';
 
@@ -194,38 +194,73 @@ function createEditPointTemplate({
   );
 }
 
-export default class EditPointView extends AbstractView {
-  #point = null;
-  #destination = null;
-  #offersByType = [];
-  #allDestinations = [];
+export default class EditPointView extends AbstractStatefulView {
+  #destinationsModel = null;
+  #offersModel = null;
   #handleFormSubmit = null;
   #handleRollupClick = null;
 
-  constructor({ point, destination, offersByType, allDestinations, onFormSubmit, onRollupClick }) {
+  constructor({
+    point,
+    destinationsModel,
+    offersModel,
+    onFormSubmit,
+    onRollupClick,
+  }) {
     super();
-    this.#point = point || EMPTY_POINT;
-    this.#destination = destination;
-    this.#offersByType = offersByType || [];
-    this.#allDestinations = allDestinations || [];
 
+    this.#destinationsModel = destinationsModel;
+    this.#offersModel = offersModel;
     this.#handleFormSubmit = onFormSubmit;
     this.#handleRollupClick = onRollupClick;
 
+    const currentPoint = point || EMPTY_POINT;
+
+    this._setState({
+      point: structuredClone(currentPoint),
+      destination: destinationsModel.getById(currentPoint.destination),
+      offersByType: offersModel.getByType(currentPoint.type),
+      allDestinations: destinationsModel.destinations,
+    });
+
+    this._restoreHandlers();
+  }
+
+  get template() {
+    return createEditPointTemplate({
+      point: this._state.point,
+      destination: this._state.destination,
+      offersByType: this._state.offersByType,
+      allDestinations: this._state.allDestinations,
+    });
+  }
+
+  get point() {
+    const priceInput = this.element.querySelector('.event__input--price');
+    const offerCheckboxes = this.element.querySelectorAll('.event__offer-checkbox:checked');
+
+    return {
+      ...this._state.point,
+      basePrice: Number(priceInput.value) || 0,
+      offerIds: Array.from(
+        offerCheckboxes,
+        (checkbox) => checkbox.id.replace('event-offer-', '')
+      ),
+    };
+  }
+
+  _restoreHandlers() {
     this.element.querySelector('form')
       .addEventListener('submit', this.#formSubmitHandler);
 
     this.element.querySelector('.event__rollup-btn')
       .addEventListener('click', this.#rollupClickHandler);
-  }
 
-  get template() {
-    return createEditPointTemplate({
-      point: this.#point,
-      destination: this.#destination,
-      offersByType: this.#offersByType,
-      allDestinations: this.#allDestinations
-    });
+    this.element.querySelector('.event__type-group')
+      .addEventListener('click', this.#typeChangeHandler);
+
+    this.element.querySelector('.event__input--destination')
+      .addEventListener('change', this.#destinationChangeHandler);
   }
 
   #formSubmitHandler = (evt) => {
@@ -236,5 +271,49 @@ export default class EditPointView extends AbstractView {
   #rollupClickHandler = (evt) => {
     evt.preventDefault();
     this.#handleRollupClick();
+  };
+
+  #typeChangeHandler = (evt) => {
+    const typeLabel = evt.target.closest('.event__type-label');
+
+    if (!typeLabel) {
+      return;
+    }
+
+    const typeInput = this.element.querySelector(`#${typeLabel.htmlFor}`);
+
+    if (!typeInput || typeInput.disabled) {
+      return;
+    }
+
+    const type = typeInput.value;
+
+    if (type === this._state.point.type) {
+      return;
+    }
+
+    const priceInput = this.element.querySelector('.event__input--price');
+
+    this.updateElement({
+      point: {
+        ...this._state.point,
+        type,
+        offerIds: [],
+        basePrice: Number(priceInput.value) || this._state.point.basePrice,
+      },
+      offersByType: this.#offersModel.getByType(type),
+    });
+  };
+
+  #destinationChangeHandler = (evt) => {
+    const destination = this.#destinationsModel.getByName(evt.target.value);
+
+    this.updateElement({
+      point: {
+        ...this._state.point,
+        destination: destination?.id ?? null,
+      },
+      destination: destination ?? null,
+    });
   };
 }
