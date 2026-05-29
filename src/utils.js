@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import { FilterType, SortType } from './const.js';
 
 const DATE_FORMAT = 'DD/MM/YY HH:mm';
+const FLATPICKR_DATE_FORMAT = 'd/m/y H:i';
 const TIME_FORMAT = 'HH:mm';
 const DAY_FORMAT = 'MMM D';
 
@@ -25,20 +26,25 @@ function humanizeDay(date) {
   return date ? dayjs(date).format(DAY_FORMAT).toUpperCase() : '';
 }
 
+function formatDurationUnit(value) {
+  return String(value).padStart(2, '0');
+}
+
 function getDuration(startDate, endDate) {
   const start = dayjs(startDate);
   const end = dayjs(endDate);
 
-  const minutes = end.diff(start, 'minute');
-  const hours = end.diff(start, 'hour');
-  const days = end.diff(start, 'day');
+  const totalMinutes = end.diff(start, 'minute');
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
 
   if (days > 0) {
-    return `${days}D ${hours % 24}H ${minutes % 60}M`;
+    return `${days}D ${formatDurationUnit(hours)}H ${formatDurationUnit(minutes)}M`;
   }
 
   if (hours > 0) {
-    return `${hours}H ${minutes % 60}M`;
+    return `${formatDurationUnit(hours)}H ${formatDurationUnit(minutes)}M`;
   }
 
   return `${minutes}M`;
@@ -76,4 +82,15 @@ const sort = {
   [SortType.PRICE]: (points) => [...points].sort(sortByPrice),
 };
 
-export { getRandomItem, getRandomInt, generateId, humanizeDate, humanizeTime, humanizeDay, getDuration, filter, sort };
+export {
+  getRandomItem,
+  getRandomInt,
+  generateId,
+  humanizeDate,
+  humanizeTime,
+  humanizeDay,
+  getDuration,
+  filter,
+  sort,
+  FLATPICKR_DATE_FORMAT,
+};
