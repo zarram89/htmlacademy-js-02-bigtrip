@@ -40,14 +40,15 @@ export default class PointPresenter {
   }
 
   get viewComponent() {
-    return this.#mode === Mode.EDIT
-      ? this.#editPointComponent
-      : this.#pointComponent;
+    if (this.#mode === Mode.EDIT) {
+      return this.#editPointComponent;
+    }
+
+    return this.#pointComponent;
   }
 
   init() {
     this.#pointComponent = this.#createPointComponent();
-    this.#editPointComponent = this.#createEditPointComponent();
     render(this.#pointComponent, this.#container);
   }
 
@@ -60,12 +61,13 @@ export default class PointPresenter {
   update(point) {
     this.#point = point;
 
-    if (this.#mode === Mode.DEFAULT) {
-      const newPointComponent = this.#createPointComponent();
-      replace(newPointComponent, this.#pointComponent);
-      this.#pointComponent = newPointComponent;
-      this.#editPointComponent = this.#createEditPointComponent();
+    if (this.#mode === Mode.EDIT) {
+      return;
     }
+
+    const newPointComponent = this.#createPointComponent();
+    replace(newPointComponent, this.#pointComponent);
+    this.#pointComponent = newPointComponent;
   }
 
   destroy() {
@@ -87,26 +89,34 @@ export default class PointPresenter {
   }
 
   #createEditPointComponent() {
-    const destination = this.#destinationsModel.getById(this.#point.destination);
-
     return new EditPointView({
       point: this.#point,
-      destination,
-      offersByType: this.#offersModel.getByType(this.#point.type),
-      allDestinations: this.#destinationsModel.destinations,
+      destinationsModel: this.#destinationsModel,
+      offersModel: this.#offersModel,
       onFormSubmit: this.#handleFormSubmit,
       onRollupClick: this.#handleRollupClick,
     });
   }
 
   #handleEditClick = () => {
+    this.#editPointComponent = this.#createEditPointComponent();
     this.#onOpenForm();
     this.#replacePointToForm();
     document.addEventListener('keydown', this.#escKeyDownHandler);
   };
 
   #handleFormSubmit = () => {
-    this.#replaceFormToPoint();
+    const updatedPoint = this.#editPointComponent.point;
+
+    this.#point = updatedPoint;
+    this.#onPointChange(updatedPoint);
+
+    const newPointComponent = this.#createPointComponent();
+    replace(newPointComponent, this.#editPointComponent);
+    this.#pointComponent = newPointComponent;
+    this.#editPointComponent = null;
+    this.#mode = Mode.DEFAULT;
+
     document.removeEventListener('keydown', this.#escKeyDownHandler);
   };
 
@@ -134,6 +144,7 @@ export default class PointPresenter {
 
   #replaceFormToPoint() {
     replace(this.#pointComponent, this.#editPointComponent);
+    this.#editPointComponent = null;
     this.#mode = Mode.DEFAULT;
   }
 }
