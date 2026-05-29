@@ -1,6 +1,8 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.css';
 import { TYPES, EMPTY_POINT } from '../const.js';
-import { humanizeDate } from '../utils.js';
+import { humanizeDate, FLATPICKR_DATE_FORMAT } from '../utils.js';
 
 function createTypesTemplate(currentType, id) {
   return TYPES.map((type) => `
@@ -199,6 +201,8 @@ export default class EditPointView extends AbstractStatefulView {
   #offersModel = null;
   #handleFormSubmit = null;
   #handleRollupClick = null;
+  #startDatepicker = null;
+  #endDatepicker = null;
 
   constructor({
     point,
@@ -241,6 +245,7 @@ export default class EditPointView extends AbstractStatefulView {
 
     return {
       ...this._state.point,
+      ...this.#getDatesFromForm(),
       basePrice: Number(priceInput.value) || 0,
       offerIds: Array.from(
         offerCheckboxes,
@@ -261,6 +266,50 @@ export default class EditPointView extends AbstractStatefulView {
 
     this.element.querySelector('.event__input--destination')
       .addEventListener('change', this.#destinationChangeHandler);
+
+    this.#setDatepickers();
+  }
+
+  #setDatepickers() {
+    const startInput = this.element.querySelector('[name="event-start-time"]');
+    const endInput = this.element.querySelector('[name="event-end-time"]');
+
+    if (this.#startDatepicker) {
+      this.#startDatepicker.destroy();
+    }
+
+    if (this.#endDatepicker) {
+      this.#endDatepicker.destroy();
+    }
+
+    this.#startDatepicker = flatpickr(startInput, {
+      enableTime: true,
+      dateFormat: FLATPICKR_DATE_FORMAT,
+      defaultDate: this._state.point.dateFrom || null,
+      onChange: () => {
+        const startDate = this.#startDatepicker.selectedDates[0];
+
+        if (startDate) {
+          this.#endDatepicker.set('minDate', startDate);
+        }
+      },
+    });
+
+    this.#endDatepicker = flatpickr(endInput, {
+      enableTime: true,
+      dateFormat: FLATPICKR_DATE_FORMAT,
+      defaultDate: this._state.point.dateTo || null,
+      minDate: this._state.point.dateFrom || null,
+    });
+  }
+
+  #getDatesFromForm() {
+    return {
+      dateFrom: this.#startDatepicker?.selectedDates[0]?.toISOString()
+        ?? this._state.point.dateFrom,
+      dateTo: this.#endDatepicker?.selectedDates[0]?.toISOString()
+        ?? this._state.point.dateTo,
+    };
   }
 
   #formSubmitHandler = (evt) => {
@@ -297,6 +346,7 @@ export default class EditPointView extends AbstractStatefulView {
     this.updateElement({
       point: {
         ...this._state.point,
+        ...this.#getDatesFromForm(),
         type,
         offerIds: [],
         basePrice: Number(priceInput.value) || this._state.point.basePrice,
@@ -311,6 +361,7 @@ export default class EditPointView extends AbstractStatefulView {
     this.updateElement({
       point: {
         ...this._state.point,
+        ...this.#getDatesFromForm(),
         destination: destination?.id ?? null,
       },
       destination: destination ?? null,
