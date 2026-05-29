@@ -39,6 +39,12 @@ export default class PointPresenter {
     return this.#point.id;
   }
 
+  get viewComponent() {
+    return this.#mode === Mode.EDIT
+      ? this.#editPointComponent
+      : this.#pointComponent;
+  }
+
   init() {
     this.#pointComponent = this.#createPointComponent();
     this.#editPointComponent = this.#createEditPointComponent();

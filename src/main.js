@@ -3,6 +3,7 @@ import PointsModel from './model/points-model.js';
 import DestinationsModel from './model/destinations-model.js';
 import OffersModel from './model/offers-model.js';
 import FilterModel from './model/filter-model.js';
+import SortModel from './model/sort-model.js';
 
 import { mockPoints } from './mock/points-mock.js';
 import { mockDestinations } from './mock/destinations-mock.js';
@@ -17,6 +18,7 @@ const pointsModel = new PointsModel(mockPoints);
 const destinationsModel = new DestinationsModel(mockDestinations);
 const offersModel = new OffersModel(mockOffers);
 const filterModel = new FilterModel();
+const sortModel = new SortModel();
 
 const boardPresenter = new BoardPresenter({
   boardContainer: siteBoardElement,
@@ -24,7 +26,8 @@ const boardPresenter = new BoardPresenter({
   pointsModel,
   destinationsModel,
   offersModel,
-  filterModel
+  filterModel,
+  sortModel,
 });
 
 boardPresenter.init();
