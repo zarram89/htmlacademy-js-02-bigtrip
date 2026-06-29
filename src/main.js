@@ -1,6 +1,7 @@
 import { render, remove } from './framework/render.js';
 import BoardPresenter from './presenter/board-presenter.js';
 import FilterPresenter from './presenter/filter-presenter.js';
+import TripInfoPresenter from './presenter/trip-info-presenter.js';
 import PointsModel from './model/points-model.js';
 import DestinationsModel from './model/destinations-model.js';
 import OffersModel from './model/offers-model.js';
@@ -10,6 +11,7 @@ import PointsApiService from './api/points-api-service.js';
 import LoadingView from './view/loading-view.js';
 
 const siteHeaderElement = document.querySelector('.page-header');
+const siteTripMainElement = siteHeaderElement.querySelector('.trip-main');
 const siteFilterElement = siteHeaderElement.querySelector('.trip-controls__filters');
 const siteMainElement = document.querySelector('.page-main');
 const siteBoardElement = siteMainElement.querySelector('.trip-events');
@@ -38,6 +40,13 @@ const filterPresenter = new FilterPresenter({
   onFilterChange: () => presenters.onFilterChange(),
 });
 
+const tripInfoPresenter = new TripInfoPresenter({
+  tripMainContainer: siteTripMainElement,
+  pointsModel,
+  destinationsModel,
+  offersModel,
+});
+
 const boardPresenter = new BoardPresenter({
   boardContainer: siteBoardElement,
   pointsModel,
@@ -45,7 +54,10 @@ const boardPresenter = new BoardPresenter({
   offersModel,
   filterModel,
   sortModel,
-  onFiltersUpdate: () => filterPresenter.init(),
+  onDataUpdate: () => {
+    filterPresenter.init();
+    tripInfoPresenter.init();
+  },
 });
 
 presenters.onFilterChange = () => boardPresenter.onFilterChange();
@@ -69,4 +81,5 @@ Promise.all([
     remove(loadingComponent);
     boardPresenter.init();
     filterPresenter.init();
+    tripInfoPresenter.init();
   });
