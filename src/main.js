@@ -9,6 +9,7 @@ import FilterModel from './model/filter-model.js';
 import SortModel from './model/sort-model.js';
 import PointsApiService from './api/points-api-service.js';
 import LoadingView from './view/loading-view.js';
+import FailedLoadView from './view/failed-load-view.js';
 
 const siteHeaderElement = document.querySelector('.page-header');
 const siteTripMainElement = siteHeaderElement.querySelector('.trip-main');
@@ -26,6 +27,7 @@ const offersModel = new OffersModel();
 const filterModel = new FilterModel();
 const sortModel = new SortModel();
 const loadingComponent = new LoadingView();
+const newEventButton = siteHeaderElement.querySelector('.trip-main__event-add-btn');
 
 render(loadingComponent, siteBoardElement);
 
@@ -62,6 +64,8 @@ const boardPresenter = new BoardPresenter({
 
 presenters.onFilterChange = () => boardPresenter.onFilterChange();
 
+let isLoadError = false;
+
 Promise.all([
   apiService.getPoints(),
   apiService.getDestinations(),
@@ -73,12 +77,18 @@ Promise.all([
     offersModel.setOffers(offers);
   })
   .catch(() => {
-    pointsModel.setPoints([]);
-    destinationsModel.setDestinations([]);
-    offersModel.setOffers([]);
+    isLoadError = true;
   })
   .finally(() => {
     remove(loadingComponent);
+
+    if (isLoadError) {
+      render(new FailedLoadView(), siteBoardElement);
+      newEventButton.disabled = true;
+      filterPresenter.init();
+      return;
+    }
+
     boardPresenter.init();
     filterPresenter.init();
     tripInfoPresenter.init();

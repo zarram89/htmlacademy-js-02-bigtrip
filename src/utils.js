@@ -40,7 +40,7 @@ function getDuration(startDate, endDate) {
   const minutes = totalMinutes % 60;
 
   if (days > 0) {
-    return `${days}D ${formatDurationUnit(hours)}H ${formatDurationUnit(minutes)}M`;
+    return `${formatDurationUnit(days)}D ${formatDurationUnit(hours)}H ${formatDurationUnit(minutes)}M`;
   }
 
   if (hours > 0) {
@@ -114,7 +114,11 @@ function getTripDates(points) {
   const end = dayjs(dateTo);
 
   if (start.month() === end.month() && start.year() === end.year()) {
-    return `${start.format('D')}&nbsp;&mdash;&nbsp;${end.format('D MMM')}`;
+    if (start.date() === end.date()) {
+      return start.format('D MMM').toUpperCase();
+    }
+
+    return `${start.format('D MMM').toUpperCase()}&nbsp;&mdash;&nbsp;${end.format('D MMM').toUpperCase()}`;
   }
 
   return `${start.format('D MMM').toUpperCase()}&nbsp;&mdash;&nbsp;${end.format('D MMM').toUpperCase()}`;

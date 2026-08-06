@@ -97,6 +97,7 @@ export default class BoardPresenter {
     if (evt.key === 'Escape') {
       evt.preventDefault();
       this.#closeCreationForm();
+      this.#clearBoard();
       this.#renderBoard();
       document.removeEventListener('keydown', this.#creationEscKeyDownHandler);
     }
@@ -224,6 +225,7 @@ export default class BoardPresenter {
 
   #handleCreationFormClose = () => {
     this.#closeCreationForm();
+    this.#clearBoard();
     this.#renderBoard();
     document.removeEventListener('keydown', this.#creationEscKeyDownHandler);
   };
@@ -279,6 +281,7 @@ export default class BoardPresenter {
           this.#pointPresenters
             .find((presenter) => presenter.id === updatedPoint.id)
             ?.update(updatedPoint);
+          this.#renderPointsOrder();
           this.#onDataUpdate();
           return updatedPoint;
         }
