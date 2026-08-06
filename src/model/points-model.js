@@ -19,7 +19,10 @@ export default class PointsModel {
   }
 
   async addPoint(point) {
-    const response = await this.#pointsApiService.addPoint(point);
+    const pointToSend = { ...point };
+    delete pointToSend.id;
+
+    const response = await this.#pointsApiService.addPoint(pointToSend);
     const adaptedPoint = PointsModel.adaptToClient(response);
     this.#points.unshift(adaptedPoint);
     return adaptedPoint;
