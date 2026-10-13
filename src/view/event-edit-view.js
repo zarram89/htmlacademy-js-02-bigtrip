@@ -1,4 +1,4 @@
-import { createElement } from '../render.js';
+import AbstractView from '../framework/view/abstract-view.js';
 import { TYPES } from '../const.js';
 import { humanizeDate } from '../utils/event-utils.js';
 
@@ -170,37 +170,52 @@ function createEventEditTemplate({ point, destination, offersByType, allDestinat
   );
 }
 
-export default class EventEditView {
+export default class EventEditView extends AbstractView {
+  #point = null;
+  #destination = null;
+  #offersByType = null;
+  #allDestinations = null;
+  #handleFormSubmit = null;
+  #handleRollupClick = null;
+
   constructor({
     point = BLANK_POINT,
     destination = {},
     offersByType = [],
     allDestinations = [],
+    onFormSubmit,
+    onRollupClick,
   }) {
-    this.point = point;
-    this.destination = destination;
-    this.offersByType = offersByType;
-    this.allDestinations = allDestinations;
+    super();
+    this.#point = point;
+    this.#destination = destination;
+    this.#offersByType = offersByType;
+    this.#allDestinations = allDestinations;
+    this.#handleFormSubmit = onFormSubmit;
+    this.#handleRollupClick = onRollupClick;
+
+    this.element.querySelector('.event__rollup-btn')
+      .addEventListener('click', this.#rollupClickHandler);
+    this.element.querySelector('form')
+      .addEventListener('submit', this.#formSubmitHandler);
   }
 
-  getTemplate() {
+  get template() {
     return createEventEditTemplate({
-      point: this.point,
-      destination: this.destination,
-      offersByType: this.offersByType,
-      allDestinations: this.allDestinations
+      point: this.#point,
+      destination: this.#destination,
+      offersByType: this.#offersByType,
+      allDestinations: this.#allDestinations
     });
   }
 
-  getElement() {
-    if (!this.element) {
-      this.element = createElement(this.getTemplate());
-    }
+  #formSubmitHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleFormSubmit();
+  };
 
-    return this.element;
-  }
-
-  removeElement() {
-    this.element = null;
-  }
+  #rollupClickHandler = (evt) => {
+    evt.preventDefault();
+    this.#handleRollupClick();
+  };
 }
