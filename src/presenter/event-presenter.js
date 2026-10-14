@@ -49,10 +49,10 @@ export default class EventPresenter {
 
     this.#eventEditComponent = new EventEditView({
       point,
-      destination: this.#destinationsModel.getById(point.destination),
-      offersByType: this.#offersModel.getByType(point.type),
-      allDestinations: this.#destinationsModel.destinations,
-      onFormSubmit: () => {
+      destinationsModel: this.#destinationsModel,
+      offersModel: this.#offersModel,
+      onFormSubmit: (updatedPoint) => {
+        this.#handleDataChange(updatedPoint);
         this.#replaceFormToCard();
         this.#removeEscKeyDownHandler();
       },
@@ -105,6 +105,7 @@ export default class EventPresenter {
   }
 
   #replaceFormToCard() {
+    this.#eventEditComponent.reset(this.#point);
     replace(this.#eventComponent, this.#eventEditComponent);
     this.#mode = Mode.DEFAULT;
   }

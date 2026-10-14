@@ -1,4 +1,4 @@
-import AbstractView from '../framework/view/abstract-view.js';
+import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
 import { TYPES } from '../const.js';
 import { humanizeDate } from '../utils/event-utils.js';
 
@@ -7,8 +7,10 @@ const BLANK_POINT = {
   basePrice: 0,
   dateFrom: null,
   dateTo: null,
-  type: 'flight',
+  destination: null,
+  isFavorite: false,
   offerIds: [],
+  type: 'flight',
 };
 
 function createTypesTemplate(currentType, id) {
@@ -47,6 +49,7 @@ function createOffersTemplate(offersByType = [], selectedOfferIds = []) {
         id="event-offer-${offer.id}"
         type="checkbox"
         name="event-offer-${offer.id}"
+        data-offer-id="${offer.id}"
         ${selectedOfferIds.includes(offer.id) ? 'checked' : ''}
       >
       <label class="event__offer-label" for="event-offer-${offer.id}">
@@ -99,8 +102,8 @@ function createDestinationTemplate(destination) {
   `;
 }
 
-function createEventEditTemplate({ point, destination, offersByType, allDestinations, }) {
-  const { id, type, dateFrom, dateTo, basePrice, offerIds } = point;
+function createEventEditTemplate({ point, destination, offersByType, allDestinations }) {
+  const { id, type, dateFrom, dateTo, basePrice, offerIds, isDisabled, isSaving, isDeleting } = point;
 
   const typesTemplate = createTypesTemplate(type, id);
 
@@ -133,7 +136,7 @@ function createEventEditTemplate({ point, destination, offersByType, allDestinat
             <label class="event__label  event__type-output" for="event-destination-${id}">
               ${type}
             </label>
-            <input class="event__input  event__input--destination" id="event-destination-${id}" type="text" name="event-destination" value="${destination?.name ?? ''}" list="destination-list-${id}">
+            <input class="event__input  event__input--destination" id="event-destination-${id}" type="text" name="event-destination" value="${destination?.name ?? ''}" list="destination-list-${id}" ${isDisabled ? 'disabled' : ''}>
             <datalist id="destination-list-${id}">
               ${destinationsList}
             </datalist>
@@ -141,10 +144,10 @@ function createEventEditTemplate({ point, destination, offersByType, allDestinat
 
           <div class="event__field-group  event__field-group--time">
             <label class="visually-hidden" for="event-start-time-${id}">From</label>
-            <input class="event__input  event__input--time" id="event-start-time-${id}" type="text" name="event-start-time" value="${humanizeDate(dateFrom)}">
+            <input class="event__input  event__input--time" id="event-start-time-${id}" type="text" name="event-start-time" value="${humanizeDate(dateFrom)}" ${isDisabled ? 'disabled' : ''}>
             &mdash;
             <label class="visually-hidden" for="event-end-time-${id}">To</label>
-            <input class="event__input  event__input--time" id="event-end-time-${id}" type="text" name="event-end-time" value="${humanizeDate(dateTo)}">
+            <input class="event__input  event__input--time" id="event-end-time-${id}" type="text" name="event-end-time" value="${humanizeDate(dateTo)}" ${isDisabled ? 'disabled' : ''}>
           </div>
 
           <div class="event__field-group  event__field-group--price">
@@ -152,12 +155,12 @@ function createEventEditTemplate({ point, destination, offersByType, allDestinat
               <span class="visually-hidden">Price</span>
               &euro;
             </label>
-            <input class="event__input  event__input--price" id="event-price-${id}" type="text" name="event-price" value="${basePrice}">
+            <input class="event__input  event__input--price" id="event-price-${id}" type="text" name="event-price" value="${basePrice}" ${isDisabled ? 'disabled' : ''}>
           </div>
 
-          <button class="event__save-btn  btn  btn--blue" type="submit">Save</button>
-          <button class="event__reset-btn" type="reset">Delete</button>
-          <button class="event__rollup-btn" type="button">
+          <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>${isSaving ? 'Saving...' : 'Save'}</button>
+          <button class="event__reset-btn" type="reset" ${isDisabled ? 'disabled' : ''}>${isDeleting ? 'Deleting...' : 'Delete'}</button>
+          <button class="event__rollup-btn" type="button" ${isDisabled ? 'disabled' : ''}>
             <span class="visually-hidden">Open event</span>
           </button>
         </header>
@@ -170,52 +173,122 @@ function createEventEditTemplate({ point, destination, offersByType, allDestinat
   );
 }
 
-export default class EventEditView extends AbstractView {
-  #point = null;
-  #destination = null;
-  #offersByType = null;
-  #allDestinations = null;
+export default class EventEditView extends AbstractStatefulView {
+  #destinationsModel = null;
+  #offersModel = null;
   #handleFormSubmit = null;
   #handleRollupClick = null;
 
-  constructor({
-    point = BLANK_POINT,
-    destination = {},
-    offersByType = [],
-    allDestinations = [],
-    onFormSubmit,
-    onRollupClick,
-  }) {
+  constructor({ point = BLANK_POINT, destinationsModel, offersModel, onFormSubmit, onRollupClick }) {
     super();
-    this.#point = point;
-    this.#destination = destination;
-    this.#offersByType = offersByType;
-    this.#allDestinations = allDestinations;
+    this.#destinationsModel = destinationsModel;
+    this.#offersModel = offersModel;
     this.#handleFormSubmit = onFormSubmit;
     this.#handleRollupClick = onRollupClick;
 
+    this._setState(EventEditView.parsePointToState(point));
+    this._restoreHandlers();
+  }
+
+  get template() {
+    const point = this._state;
+    const destination = this.#destinationsModel.getById(point.destination);
+    const offersByType = this.#offersModel.getByType(point.type);
+
+    return createEventEditTemplate({
+      point,
+      destination,
+      offersByType,
+      allDestinations: this.#destinationsModel.destinations,
+    });
+  }
+
+  reset(point) {
+    this.updateElement(EventEditView.parsePointToState(point));
+  }
+
+  _restoreHandlers() {
     this.element.querySelector('.event__rollup-btn')
       .addEventListener('click', this.#rollupClickHandler);
     this.element.querySelector('form')
       .addEventListener('submit', this.#formSubmitHandler);
-  }
+    this.element.querySelector('.event__type-group')
+      .addEventListener('change', this.#typeChangeHandler);
+    this.element.querySelector('.event__input--destination')
+      .addEventListener('change', this.#destinationChangeHandler);
+    this.element.querySelector('.event__input--price')
+      .addEventListener('input', this.#priceChangeHandler);
 
-  get template() {
-    return createEventEditTemplate({
-      point: this.#point,
-      destination: this.#destination,
-      offersByType: this.#offersByType,
-      allDestinations: this.#allDestinations
-    });
+    const offersContainer = this.element.querySelector('.event__available-offers');
+    if (offersContainer) {
+      offersContainer.addEventListener('change', this.#offerChangeHandler);
+    }
   }
 
   #formSubmitHandler = (evt) => {
     evt.preventDefault();
-    this.#handleFormSubmit();
+    this.#handleFormSubmit(EventEditView.parseStateToPoint(this._state));
   };
 
   #rollupClickHandler = (evt) => {
     evt.preventDefault();
     this.#handleRollupClick();
   };
+
+  #typeChangeHandler = (evt) => {
+    evt.preventDefault();
+    this.updateElement({
+      type: evt.target.value,
+      offerIds: [],
+    });
+  };
+
+  #destinationChangeHandler = (evt) => {
+    evt.preventDefault();
+    const destinationName = evt.target.value;
+    const destination = this.#destinationsModel.destinations
+      .find((item) => item.name === destinationName);
+
+    this.updateElement({
+      destination: destination ? destination.id : null,
+    });
+  };
+
+  #priceChangeHandler = (evt) => {
+    evt.preventDefault();
+    this._setState({ basePrice: Number(evt.target.value) });
+  };
+
+  #offerChangeHandler = (evt) => {
+    evt.preventDefault();
+    const offerId = evt.target.dataset.offerId;
+    const checked = evt.target.checked;
+    const offerIds = this._state.offerIds.slice();
+
+    if (checked) {
+      offerIds.push(offerId);
+    } else {
+      const index = offerIds.indexOf(offerId);
+      offerIds.splice(index, 1);
+    }
+
+    this.updateElement({ offerIds });
+  };
+
+  static parsePointToState(point) {
+    return {
+      ...point,
+      isDisabled: false,
+      isSaving: false,
+      isDeleting: false,
+    };
+  }
+
+  static parseStateToPoint(state) {
+    const point = { ...state };
+    delete point.isDisabled;
+    delete point.isSaving;
+    delete point.isDeleting;
+    return point;
+  }
 }
