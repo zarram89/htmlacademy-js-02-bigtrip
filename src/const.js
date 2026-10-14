@@ -21,4 +21,10 @@ const FilterLabel = {
   [FilterType.PAST]: 'Past',
 };
 
-export { TYPES, FilterType, FilterLabel, NoEventMessages };
+const SortType = {
+  DAY: 'day',
+  TIME: 'time',
+  PRICE: 'price',
+};
+
+export { TYPES, FilterType, FilterLabel, NoEventMessages, SortType };

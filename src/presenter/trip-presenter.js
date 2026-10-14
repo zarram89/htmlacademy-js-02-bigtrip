@@ -1,6 +1,8 @@
 import { render, remove } from '../framework/render.js';
 import { generateFilters } from '../mocks/filter-mock.js';
 import { filter } from '../utils/filter-utils.js';
+import { SortType } from '../const.js';
+import { sort } from '../utils/sort-utils.js';
 import FilterView from '../view/filter-view.js';
 import SortView from '../view/sort-view.js';
 import EventListView from '../view/event-list-view.js';
@@ -15,6 +17,7 @@ export default class TripPresenter {
   #destinationsModel = null;
   #offersModel = null;
   #filterModel = null;
+  #sortModel = null;
 
   #eventListComponent = new EventListView();
   #noEventComponent = null;
@@ -30,6 +33,7 @@ export default class TripPresenter {
     destinationsModel,
     offersModel,
     filterModel,
+    sortModel,
   }) {
     this.#tripContainer = tripContainer;
     this.#filterContainer = filterContainer;
@@ -37,12 +41,16 @@ export default class TripPresenter {
     this.#destinationsModel = destinationsModel;
     this.#offersModel = offersModel;
     this.#filterModel = filterModel;
+    this.#sortModel = sortModel;
   }
 
   get points() {
     const points = this.#pointsModel.points;
     const filterType = this.#filterModel.filter;
-    return filter[filterType](points);
+    const sortType = this.#sortModel.sort;
+    const filteredPoints = filter[filterType](points);
+
+    return sort[sortType](filteredPoints);
   }
 
   init() {
@@ -75,19 +83,38 @@ export default class TripPresenter {
     render(this.#filterComponent, this.#filterContainer);
   }
 
+  #handleSortTypeChange = (sortType) => {
+    if (this.#sortModel.sort === sortType) {
+      return;
+    }
+
+    this.#sortModel.setSort(sortType);
+    this.#clearTrip();
+    this.#renderTrip();
+  };
+
   #handleFilterChange = (filterType) => {
     if (this.#filterModel.filter === filterType) {
       return;
     }
 
     this.#filterModel.setFilter(filterType);
+    this.#sortModel.setSort(SortType.DAY);
     this.#renderFilter();
     this.#clearTrip();
     this.#renderTrip();
   };
 
   #renderSort() {
-    this.#sortComponent = new SortView();
+    if (this.#sortComponent) {
+      remove(this.#sortComponent);
+    }
+
+    this.#sortComponent = new SortView({
+      currentSortType: this.#sortModel.sort,
+      onSortTypeChange: this.#handleSortTypeChange,
+    });
+
     render(this.#sortComponent, this.#tripContainer);
   }
 

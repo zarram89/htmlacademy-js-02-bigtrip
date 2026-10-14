@@ -8,6 +8,7 @@ import { mockDestinations } from './mocks/destinations-mock.js';
 import { mockOffers } from './mocks/offers-mock.js';
 import TripPresenter from './presenter/trip-presenter.js';
 import FilterModel from './model/filter-model.js';
+import SortModel from './model/sort-model.js';
 
 const pageBodyElement = document.querySelector('.page-body');
 const pageHeaderElement = pageBodyElement.querySelector('.page-header');
@@ -19,6 +20,7 @@ const pointsModel = new PointsModel(mockPoints);
 const destinationsModel = new DestinationsModel(mockDestinations);
 const offersModel = new OffersModel(mockOffers);
 const filterModel = new FilterModel();
+const sortModel = new SortModel();
 const tripPresenter = new TripPresenter({
   tripContainer: tripEventsElement,
   filterContainer: tripFiltersContainer,
@@ -26,6 +28,7 @@ const tripPresenter = new TripPresenter({
   destinationsModel,
   offersModel,
   filterModel,
+  sortModel,
 });
 
 render(new TripInfoView(), tripMainElement, RenderPosition.AFTERBEGIN);
