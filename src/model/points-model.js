@@ -5,7 +5,7 @@ export default class PointsModel {
     this.#points = points;
   }
 
-  getAll() {
+  get points() {
     return this.#points;
   }
 

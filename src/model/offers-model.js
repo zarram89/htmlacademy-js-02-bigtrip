@@ -19,7 +19,7 @@ export default class OffersModel {
     });
   }
 
-  getAll() {
+  get offers() {
     return this.#offers;
   }
 

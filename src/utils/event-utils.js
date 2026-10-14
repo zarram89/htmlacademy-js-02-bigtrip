@@ -25,11 +25,11 @@ function getDuration(startDate, endDate) {
   const days = end.diff(start, 'day');
 
   if (days > 0) {
-    return `${days}D ${hours % 24}H ${minutes % 60}M`;
+    return `${String(days).padStart(2, '0')}D ${String(hours % 24).padStart(2, '0')}H ${String(minutes % 60).padStart(2, '0')}M`;
   }
 
   if (hours > 0) {
-    return `${hours}H ${minutes % 60}M`;
+    return `${String(hours).padStart(2, '0')}H ${String(minutes % 60).padStart(2, '0')}M`;
   }
 
   return `${minutes}M`;

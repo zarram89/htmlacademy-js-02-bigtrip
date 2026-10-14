@@ -10,7 +10,7 @@ export default class DestinationsModel {
     );
   }
 
-  getAll() {
+  get destinations() {
     return this.#destinations;
   }
 
