@@ -1,3 +1,5 @@
+import { updateItem } from '../utils/common.js';
+
 export default class PointsModel {
   #points = null;
 
@@ -11,5 +13,9 @@ export default class PointsModel {
 
   getPointById(id) {
     return this.#points.find((point) => point.id === id);
+  }
+
+  updatePoint(updatedPoint) {
+    this.#points = updateItem(this.#points, updatedPoint);
   }
 }

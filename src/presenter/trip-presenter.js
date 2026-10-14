@@ -1,16 +1,16 @@
-import { render, replace, remove } from '../framework/render.js';
+import { render, remove } from '../framework/render.js';
 import { generateFilters } from '../mocks/filter-mock.js';
 import { filter } from '../utils/filter-utils.js';
 import FilterView from '../view/filter-view.js';
 import SortView from '../view/sort-view.js';
 import EventListView from '../view/event-list-view.js';
-import EventEditView from '../view/event-edit-view.js';
-import EventView from '../view/event-view.js';
 import NoEventView from '../view/no-event-view.js';
+import EventPresenter from './event-presenter.js';
 
 export default class TripPresenter {
   #tripContainer = null;
   #filterContainer = null;
+
   #pointsModel = null;
   #destinationsModel = null;
   #offersModel = null;
@@ -20,7 +20,8 @@ export default class TripPresenter {
   #noEventComponent = null;
   #filterComponent = null;
   #sortComponent = null;
-  #escKeyDownHandler = null;
+
+  #eventPresenters = new Map();
 
   constructor({
     tripContainer,
@@ -38,7 +39,7 @@ export default class TripPresenter {
     this.#filterModel = filterModel;
   }
 
-  get #points() {
+  get points() {
     const points = this.#pointsModel.points;
     const filterType = this.#filterModel.filter;
     return filter[filterType](points);
@@ -48,6 +49,15 @@ export default class TripPresenter {
     this.#renderFilter();
     this.#renderTrip();
   }
+
+  #handleModeChange = () => {
+    this.#eventPresenters.forEach((presenter) => presenter.resetView());
+  };
+
+  #handleEventChange = (updatedEvent) => {
+    this.#pointsModel.updatePoint(updatedEvent);
+    this.#eventPresenters.get(updatedEvent.id).init(updatedEvent);
+  };
 
   #renderFilter() {
     const filters = generateFilters(this.#pointsModel.points);
@@ -82,7 +92,9 @@ export default class TripPresenter {
   }
 
   #clearTrip() {
-    this.#removeEscKeyDownHandler();
+    this.#eventPresenters.forEach((presenter) => presenter.destroy());
+    this.#eventPresenters.clear();
+
     remove(this.#sortComponent);
     this.#sortComponent = null;
     if (this.#noEventComponent) {
@@ -93,64 +105,18 @@ export default class TripPresenter {
   }
 
   #renderEvent(point) {
-    const eventListElement = this.#eventListComponent.element;
-
-    const escKeyDownHandler = (evt) => {
-      if (evt.key === 'Escape') {
-        evt.preventDefault();
-        replaceFormToCard();
-        this.#removeEscKeyDownHandler();
-      }
-    };
-
-    const eventComponent = new EventView({
-      point,
-      destination: this.#destinationsModel.getById(point.destination),
-      offers: this.#offersModel.getByIds(point.offerIds),
-      onRolldownClick: () => {
-        replaceCardToForm();
-        this.#setEscKeyDownHandler(escKeyDownHandler);
-      },
+    const eventPresenter = new EventPresenter({
+      eventListContainer: this.#eventListComponent.element,
+      destinationsModel: this.#destinationsModel,
+      offersModel: this.#offersModel,
+      onDataChange: this.#handleEventChange,
+      onModeChange: this.#handleModeChange
     });
 
-    const eventEditComponent = new EventEditView({
-      point,
-      destination: this.#destinationsModel.getById(point.destination),
-      offersByType: this.#offersModel.getByType(point.type),
-      allDestinations: this.#destinationsModel.destinations,
-      onFormSubmit: () => {
-        replaceFormToCard();
-        this.#removeEscKeyDownHandler();
-      },
-      onRollupClick: () => {
-        replaceFormToCard();
-        this.#removeEscKeyDownHandler();
-      },
-    });
-
-    function replaceCardToForm() {
-      replace(eventEditComponent, eventComponent);
-    }
-
-    function replaceFormToCard() {
-      replace(eventComponent, eventEditComponent);
-    }
-
-    render(eventComponent, eventListElement);
+    this.#eventPresenters.set(point.id, eventPresenter);
+    eventPresenter.init(point);
   }
 
-  #setEscKeyDownHandler(handler) {
-    this.#removeEscKeyDownHandler();
-    this.#escKeyDownHandler = handler;
-    document.addEventListener('keydown', handler);
-  }
-
-  #removeEscKeyDownHandler() {
-    if (this.#escKeyDownHandler) {
-      document.removeEventListener('keydown', this.#escKeyDownHandler);
-      this.#escKeyDownHandler = null;
-    }
-  }
 
   #renderNoEvent() {
     this.#noEventComponent = new NoEventView({
@@ -159,12 +125,17 @@ export default class TripPresenter {
     render(this.#noEventComponent, this.#tripContainer);
   }
 
-  #renderEventsList(events) {
+  #renderEvents(events) {
     events.forEach((event) => this.#renderEvent(event));
   }
 
+  #renderEventsList(events) {
+    render(this.#eventListComponent, this.#tripContainer);
+    this.#renderEvents(events);
+  }
+
   #renderTrip() {
-    const points = this.#points;
+    const points = this.points;
     const pointCount = points.length;
 
     if (pointCount === 0) {
@@ -173,8 +144,6 @@ export default class TripPresenter {
     }
 
     this.#renderSort();
-    render(this.#eventListComponent, this.#tripContainer);
-
     this.#renderEventsList(points);
   }
 }
