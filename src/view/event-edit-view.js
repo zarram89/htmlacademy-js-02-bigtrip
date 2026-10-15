@@ -1,4 +1,6 @@
 import AbstractStatefulView from '../framework/view/abstract-stateful-view.js';
+import flatpickr from 'flatpickr';
+import 'flatpickr/dist/flatpickr.min.css';
 import { TYPES } from '../const.js';
 import { humanizeDate } from '../utils/event-utils.js';
 
@@ -178,6 +180,8 @@ export default class EventEditView extends AbstractStatefulView {
   #offersModel = null;
   #handleFormSubmit = null;
   #handleRollupClick = null;
+  #datepickerFrom = null;
+  #datepickerTo = null;
 
   constructor({ point = BLANK_POINT, destinationsModel, offersModel, onFormSubmit, onRollupClick }) {
     super();
@@ -223,6 +227,27 @@ export default class EventEditView extends AbstractStatefulView {
     if (offersContainer) {
       offersContainer.addEventListener('change', this.#offerChangeHandler);
     }
+
+    this.#datepickerFrom?.destroy();
+    this.#datepickerTo?.destroy();
+
+    this.#datepickerFrom = flatpickr(
+      this.element.querySelector(`#event-start-time-${this._state.id}`),
+      {
+        dateFormat: 'd/m/y H:i',
+        enableTime: true,
+        onChange: this.#dateFromChangeHandler,
+      },
+    );
+
+    this.#datepickerTo = flatpickr(
+      this.element.querySelector(`#event-end-time-${this._state.id}`),
+      {
+        dateFormat: 'd/m/y H:i',
+        enableTime: true,
+        onChange: this.#dateToChangeHandler,
+      },
+    );
   }
 
   #formSubmitHandler = (evt) => {
@@ -257,6 +282,14 @@ export default class EventEditView extends AbstractStatefulView {
   #priceChangeHandler = (evt) => {
     evt.preventDefault();
     this._setState({ basePrice: Number(evt.target.value) });
+  };
+
+  #dateFromChangeHandler = ([userDate]) => {
+    this._setState({ dateFrom: userDate.toISOString() });
+  };
+
+  #dateToChangeHandler = ([userDate]) => {
+    this._setState({ dateTo: userDate.toISOString() });
   };
 
   #offerChangeHandler = (evt) => {
